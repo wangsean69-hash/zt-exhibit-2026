@@ -1,0 +1,322 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>梓桐卡车画室 · 3D 展厅</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#0d0b09;
+font-family:'Songti SC','Noto Serif SC',serif}
+#box{position:fixed;inset:0}
+#hud{position:fixed;left:0;right:0;bottom:0;padding:16px;text-align:center;color:#8d8271;
+font-size:11px;letter-spacing:.22em;pointer-events:none;opacity:0;transition:opacity 2.2s ease .6s;
+text-shadow:0 1px 8px #000}
+#hud.show{opacity:1}
+#fade{position:fixed;inset:0;background:#000;opacity:1;transition:opacity 1.8s ease .15s;
+pointer-events:none;z-index:6}
+#vig{position:fixed;inset:0;pointer-events:none;z-index:4;
+transform:translateZ(0);backface-visibility:hidden;
+background:radial-gradient(ellipse 76% 66% at 50% 46%,transparent 52%,rgba(0,0,0,.55) 100%)}
+#grain{position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.3;
+transform:translateZ(0);backface-visibility:hidden}
+#top{position:fixed;top:0;left:0;right:0;padding:18px;text-align:center;pointer-events:none}
+#top b{color:#d9c08a;font-size:15px;letter-spacing:.4em;text-shadow:0 0 24px rgba(201,168,106,.4)}
+#top a{display:inline-block;margin-top:8px;color:#6d6355;font-size:11px;letter-spacing:.2em;
+text-decoration:none;pointer-events:auto;border:1px solid #3a332a;border-radius:999px;padding:6px 18px}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+background:#0d0b09;color:#9a8f7a;letter-spacing:.4em;font-size:13px;transition:opacity .7s}
+#ov{display:none;position:fixed;inset:0;background:rgba(5,4,3,.94);z-index:9;cursor:zoom-out;
+align-items:center;justify-content:center;flex-direction:column;padding:24px}
+#ov.on{display:flex}
+#ov img{max-width:92vw;max-height:80vh;background:#fff;padding:10px;box-shadow:0 0 80px #000}
+#ov .c{color:#d8cfbc;letter-spacing:.26em;margin-top:16px;font-size:14px}
+#info{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+z-index:7;background:rgba(12,9,7,.84);border:1px solid #8a6d3b;border-radius:14px;
+padding:14px 24px;text-align:center;opacity:0;pointer-events:none;
+transition:opacity .5s,transform .5s;backdrop-filter:blur(6px)}
+#info.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#info b{display:block;color:#ead9b4;font-size:16px;letter-spacing:.14em}
+#info span{display:block;color:#98876b;font-size:11px;letter-spacing:.16em;margin-top:6px}
+#info button{margin:11px 6px 0;padding:7px 20px;border:1px solid #54411f;border-radius:999px;
+background:none;color:#d9c08a;font-size:11px;letter-spacing:.2em;cursor:pointer}
+#info button:hover{background:#c9a86a;color:#171310}
+</style></head><body>
+<div id="box"></div>
+<div id="vig"></div>
+<div id="grain"></div>
+<div id="top"><b>梓桐卡车画室 · 三维展厅</b><br><a href="gallery.html">返回平面展厅</a></div>
+<div id="hud">拖拽环视 · 滚轮 / W S 漫步 · A D 转身 · 点击画作＝走近细看 · ESC 返回</div>
+<div id="load">布 展 中 …</div>
+<div id="fade"></div>
+<div id="info"><b id="info-t"></b><span id="info-m"></span>
+<button id="info-full">看原图</button><button id="info-back">返回漫步</button></div>
+<div id="ov"><img id="ovi"><div class="c" id="ovc"></div></div>
+<script src="lib/three.min.js"></script>
+<script>
+const WORKS=[{"t": "三一红黄色吊车", "b": "三一", "dt": "2026-09-27", "f": "三一红黄色吊车.jpg"}, {"t": "三一红黄色吊车2", "b": "三一", "dt": "2026-09-27", "f": "三一红黄色吊车2.jpg"}, {"t": "东风KL邮政车", "b": "东风", "dt": "2026-09-27", "f": "东风KL邮政车.jpg"}, {"t": "中国重汽汕德卡电动搅拌车和中联搅拌罐", "b": "中国重汽汕德卡", "dt": "2026-09-27", "f": "中国重汽汕德卡电动搅拌车和中联搅拌罐.jpg"}, {"t": "中国重汽汕德卡电动翻斗自卸车", "b": "中国重汽汕德卡", "dt": "2026-09-27", "f": "中国重汽汕德卡电动翻斗自卸车.jpg"}, {"t": "斯堪尼亚半挂搅拌车", "b": "斯堪尼亚", "dt": "2026-09-27", "f": "斯堪尼亚半挂搅拌车.jpg"}, {"t": "福田xdla吊车", "b": "福田", "dt": "2026-09-27", "f": "福田xdla吊车.jpg"}, {"t": "福田四米二油罐车", "b": "福田", "dt": "2026-09-27", "f": "福田四米二油罐车.jpg"}, {"t": "解放J6P半挂车", "b": "解放", "dt": "2026-09-27", "f": "解放J6P半挂车.jpg"}, {"t": "解放J6P平台拖车", "b": "解放", "dt": "2026-09-27", "f": "解放J6P平台拖车.jpg"}, {"t": "解放J6P平板车和三一挖掘机", "b": "解放", "dt": "2026-09-27", "f": "解放J6P平板车和三一挖掘机.jpg"}, {"t": "解放J6P电动自卸车", "b": "解放", "dt": "2026-09-27", "f": "解放J6P电动自卸车.jpg"}, {"t": "陕汽德龙x3000 牵引车", "b": "陕汽德龙", "dt": "2026-09-27", "f": "陕汽德龙x3000 牵引车.jpg"}, {"t": "陕汽德龙x5000 和半挂车", "b": "陕汽德龙", "dt": "2026-09-27", "f": "陕汽德龙x5000 和半挂车.jpg"}, {"t": "陕汽德龙x5000半挂油罐车", "b": "陕汽德龙", "dt": "2026-09-27", "f": "陕汽德龙x5000半挂油罐车.jpg"}, {"t": "陕汽德龙x5000牵引车拉着5个钢卷", "b": "陕汽德龙", "dt": "2026-09-27", "f": "陕汽德龙x5000牵引车拉着5个钢卷.jpg"}, {"t": "陕汽德龙天然气邮政半挂牵引车", "b": "陕汽德龙", "dt": "2026-09-27", "f": "陕汽德龙天然气邮政半挂牵引车.jpg"}, {"t": "中国重汽豪沃老款 A7 前四后八搅拌车", "b": "中国重汽豪沃", "dt": "2026-10-02", "f": "中国重汽豪沃老款 A7 前四后八搅拌车.jpg"}];
+const box=document.getElementById('box');
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x0d0b09,22,46);
+const cam=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,120);
+cam.position.set(0,2.45,12.2);
+const ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+ren.setPixelRatio(Math.min(devicePixelRatio,1.75));
+ren.domElement.addEventListener('webglcontextlost',function(e){e.preventDefault();
+  const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#9a8f7a;letter-spacing:.3em;background:#0d0b09;z-index:99';
+  d.textContent='显卡上下文丢失，请刷新页面';document.body.appendChild(d)});
+ren.setSize(innerWidth,innerHeight);
+ren.outputEncoding=THREE.sRGBEncoding;
+ren.toneMapping=THREE.ACESFilmicToneMapping;
+ren.toneMappingExposure=1.15;
+box.appendChild(ren.domElement);
+const MAXA=ren.capabilities.getMaxAnisotropy();
+scene.add(new THREE.AmbientLight(0xfff2dd,.15));
+scene.add(new THREE.HemisphereLight(0x2c251d,0x0b0908,.30));
+const room=new THREE.Mesh(new THREE.BoxGeometry(26,6.4,18),
+  new THREE.MeshLambertMaterial({color:0x251c15,side:THREE.BackSide}));
+room.position.y=3.2;scene.add(room);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,18),
+  new THREE.MeshPhongMaterial({color:0x180f08,specular:0x4a3820,shininess:36}));
+floor.rotation.x=-Math.PI/2;
+floor.position.y=.02;   // 与房间外壳底面(y=0)错开, 杜绝共面 z-fighting 闪屏
+scene.add(floor);
+const ceil=new THREE.Mesh(new THREE.PlaneGeometry(26,18),
+  new THREE.MeshLambertMaterial({color:0x0a0807}));
+ceil.rotation.x=Math.PI/2;ceil.position.y=6.38;  // 同理与外壳顶面(y=6.4)错开
+scene.add(ceil);
+const skM=new THREE.MeshLambertMaterial({color:0x54411f});
+[[0,-8.94,26,.1],[0,8.94,26,.1]].forEach(a=>{
+  const s=new THREE.Mesh(new THREE.BoxGeometry(a[2],.16,a[3]),skM);
+  s.position.set(a[0],.08,a[1]);scene.add(s)});
+[[-12.94,0],[12.94,0]].forEach(a=>{
+  const s=new THREE.Mesh(new THREE.BoxGeometry(.1,.16,18),skM);
+  s.position.set(a[0],.08,a[1]);scene.add(s)});
+// ---- 程序纹理 ----
+function radTex(stops,size){const c=document.createElement('canvas');c.width=c.height=size;
+  const g=c.getContext('2d');const r=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  stops.forEach(s=>r.addColorStop(s[0],s[1]));g.fillStyle=r;g.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c)}
+const DOT=radTex([[0,'rgba(255,240,210,1)'],[1,'rgba(255,240,210,0)']],64);
+const WASH=radTex([[0,'rgba(255,232,190,.85)'],[.55,'rgba(255,220,170,.25)'],[1,'rgba(255,220,170,0)']],256);
+const CONE=(function(){const c=document.createElement('canvas');c.width=8;c.height=128;
+  const g=c.getContext('2d');const r=g.createLinearGradient(0,0,0,128);
+  r.addColorStop(0,'rgba(255,235,200,.55)');r.addColorStop(1,'rgba(255,235,200,0)');
+  g.fillStyle=r;g.fillRect(0,0,8,128);return new THREE.CanvasTexture(c)})();
+function plateTex(title){const c=document.createElement('canvas');c.width=1024;c.height=288;
+  const g=c.getContext('2d');g.fillStyle='#15100b';g.fillRect(0,0,1024,288);
+  g.strokeStyle='#8a6d3b';g.lineWidth=5;g.strokeRect(16,16,992,256);
+  g.textAlign='center';g.textBaseline='middle';
+  g.fillStyle='#ead9b4';g.font='600 82px "Songti SC","Noto Serif SC","STSong",serif';
+  let t=title;while(g.measureText(t).width>900&&t.length>1)t=t.slice(0,-1);
+  if(t!==title)t+='…';
+  g.fillText(t,512,118);
+  g.fillStyle='#98876b';g.font='42px "Songti SC","STSong",serif';
+  g.fillText('王梓桐 · 六岁 · 马克笔',512,206);
+  const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;tx.anisotropy=MAXA;return tx}
+// ---- 挂画 ----
+const loader=new THREE.TextureLoader();
+let loaded=0,intro=-1;
+const hits=[],units=[];
+function hang(w,i,n,wall){
+  loader.load(w.d||('wall/'+w.f+'.jpg'),function(tx){
+    tx.encoding=THREE.sRGBEncoding;tx.anisotropy=MAXA;
+    const asp=tx.image.width/tx.image.height;
+    const h=asp>1.6?1.45:(asp<.8?2.1:1.75), wd=Math.min(h*asp,4.0);
+    const g=new THREE.Group();
+    const frame=new THREE.Mesh(new THREE.PlaneGeometry(wd+.36,h+.36),
+      new THREE.MeshLambertMaterial({color:0x0b0907}));
+    const fbox=new THREE.Mesh(new THREE.BoxGeometry(wd+.36,h+.36,.09),
+      new THREE.MeshLambertMaterial({color:0x140e09}));
+    fbox.position.z=-.055;
+    const mat=new THREE.Mesh(new THREE.PlaneGeometry(wd+.15,h+.15),
+      new THREE.MeshLambertMaterial({color:0xece7da}));
+    const art=new THREE.Mesh(new THREE.PlaneGeometry(wd,h),
+      new THREE.MeshBasicMaterial({map:tx,transparent:true,opacity:0}));
+    const wash=new THREE.Mesh(new THREE.PlaneGeometry(wd*1.55,h*1.75),
+      new THREE.MeshBasicMaterial({map:WASH,transparent:true,opacity:.5,
+        blending:THREE.AdditiveBlending,depthWrite:false}));
+    const plate=new THREE.Mesh(new THREE.PlaneGeometry(1.3,.365),
+      new THREE.MeshBasicMaterial({map:plateTex(w.t),transparent:true,opacity:.93}));
+    mat.position.z=.01;art.position.z=.02;wash.position.z=.035;
+    plate.position.set(0,-h/2-.44,.03);
+    // 固定渲染顺序: 杜绝透明物体逐帧排序翻转导致的闪跳。
+    // 关键: 相邻画的光洗片共面且重叠, 整数 renderOrder 会在 tie 点随相机微动翻转,
+    // 故每幅画发唯一小数序号, 排序永久确定
+    const ro=units.length;
+    frame.renderOrder=0;mat.renderOrder=1;art.renderOrder=2;
+    wash.renderOrder=3+ro*.001;plate.renderOrder=4+ro*.001;
+    fbox.renderOrder=0;
+    g.add(fbox);g.add(frame);g.add(mat);g.add(art);g.add(wash);g.add(plate);
+    const usable=wall==='back'?23:15.5;
+    const sp=Math.min(4.4,usable/Math.max(n-1,1));
+    const off=(i-(n-1)/2)*sp;
+    let px,pz,ry=0;
+    if(wall==='back'){px=off;pz=-8.82}
+    else if(wall==='left'){px=-12.82;pz=off;ry=Math.PI/2}
+    else{px=12.82;pz=off;ry=-Math.PI/2}
+    g.position.set(px,2.35,pz);g.rotation.y=ry;
+    const nx=Math.sin(ry),nz=Math.cos(ry);
+    const lx=px+nx*1.5,lz=pz+nz*1.5;
+    const lamp=new THREE.Mesh(new THREE.CylinderGeometry(.06,.09,.15,12),
+      new THREE.MeshBasicMaterial({color:0xffe9c4}));
+    lamp.position.set(lx,5.92,lz);scene.add(lamp);
+    const spot=new THREE.SpotLight(0xffe2ae,1.55,13,Math.PI/6.2,.62,1.25);
+    spot.position.set(lx,5.92,lz);spot.target=g;scene.add(spot);scene.add(g);
+    const cone=new THREE.Mesh(new THREE.CylinderGeometry(.08,wd*.60,3.4,18,1,true),
+      new THREE.MeshBasicMaterial({map:CONE,transparent:true,opacity:.09,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    cone.renderOrder=6+ro*.001;
+    cone.position.set((lx+px)/2,4.2,(lz+pz)/2);
+    if(wall==='back')cone.rotation.x=.40;
+    else if(wall==='left')cone.rotation.z=-.40;
+    else cone.rotation.z=.40;
+    scene.add(cone);
+    art.userData={t:w.t,d:w.d,f:w.f,b:w.b,dt:w.dt};
+    hits.push(art);
+    units.push({g,art,spot,s:1,ts:1,si:1.55});
+    document.getElementById('load').textContent=
+      '布 展 中 '+Math.round(loaded/WORKS.length*100)+'%';
+    if(++loaded===WORKS.length){
+      const ld=document.getElementById('load');
+      ld.style.opacity=0;setTimeout(()=>ld.remove(),800);
+      document.getElementById('fade').style.opacity=0;
+      document.getElementById('hud').classList.add('show');
+      intro=3.4;
+    }
+  });
+}
+const nb=Math.min(WORKS.length,7);
+const nl=Math.min(6,Math.max(WORKS.length-nb,0));
+const nr=Math.max(WORKS.length-nb-nl,0);
+WORKS.forEach(function(w,i){
+  if(i<nb)hang(w,i,nb,'back');
+  else if(i<nb+nl)hang(w,i-nb,nl,'left');
+  else hang(w,i-nb-nl,nr,'right');
+});
+// ---- 尘埃粒子 ----
+const DN=420,dp=new Float32Array(DN*3);
+for(let i=0;i<DN;i++){dp[i*3]=(Math.random()-.5)*23;
+  dp[i*3+1]=.4+Math.random()*4.4;dp[i*3+2]=(Math.random()-.5)*16}
+const dgeo=new THREE.BufferGeometry();
+dgeo.setAttribute('position',new THREE.BufferAttribute(dp,3));
+const dust=new THREE.Points(dgeo,new THREE.PointsMaterial({size:.05,map:DOT,
+  transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false}));
+dust.renderOrder=7;
+scene.add(dust);
+// ---- 控制（W/↑/滚轮上 = 前进；点击画作 = 飞近细看；ESC = 返回）----
+let yaw=Math.PI,pitch=-.04,keys={},lastAct=performance.now();
+let focus=null,F=null;
+addEventListener('keydown',e=>{keys[e.key]=1;lastAct=performance.now();
+  if(e.key==='Escape'&&focus)unfocus()});
+addEventListener('keyup',e=>keys[e.key]=0);
+let drag=null,moved=0,mouse=null;
+ren.domElement.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];moved=0;
+  lastAct=performance.now()});
+addEventListener('pointermove',e=>{mouse=[e.clientX,e.clientY];
+  if(!drag)return;
+  const dx=e.clientX-drag[0],dy=e.clientY-drag[1];moved+=Math.abs(dx)+Math.abs(dy);
+  if(focus&&!F){yaw=Math.max(focus.y0-.42,Math.min(focus.y0+.42,yaw-dx*.0026));
+    pitch=Math.max(focus.p0-.3,Math.min(focus.p0+.3,pitch-dy*.0022))}
+  else if(!F){yaw-=dx*.0040;pitch=Math.max(-.55,Math.min(.55,pitch-dy*.0030))}
+  drag=[e.clientX,e.clientY];lastAct=performance.now()});
+addEventListener('pointerup',e=>{
+  if(drag&&moved<6&&intro<=0&&!F){
+    mv.x=e.clientX/innerWidth*2-1;mv.y=-(e.clientY/innerHeight)*2+1;
+    ray.setFromCamera(mv,cam);
+    const h=ray.intersectObjects(hits)[0];
+    if(h)pick(h.object);else if(focus)unfocus()}
+  drag=null});
+ren.domElement.addEventListener('wheel',e=>{
+  if(F)return;
+  if(focus){focus.dist=Math.max(1.15,Math.min(3.4,focus.dist+(e.deltaY>0?.28:-.28)));
+    cam.position.set(focus.p.x+focus.nx*focus.dist,focus.p.y-.12,
+      focus.p.z+focus.nz*focus.dist)}
+  else if(intro<=0)step(e.deltaY>0?-.55:.55);
+  lastAct=performance.now()},{passive:true});
+function step(d){cam.position.x+=Math.sin(yaw)*d;cam.position.z+=Math.cos(yaw)*d;
+  cam.position.x=Math.max(-11.4,Math.min(11.4,cam.position.x));
+  cam.position.z=Math.max(-7.4,Math.min(7.4,cam.position.z))}
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2();
+let hovered=null,frame=0;
+function shortest(a,b){let d=(b-a)%(Math.PI*2);
+  if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return a+d}
+function flyTo(tp,ty,tpi,dur){F={t:0,dur:dur,fp:cam.position.clone(),fy:yaw,fpi:pitch,
+  tp:tp,ty:shortest(yaw,ty),tpi:tpi}}
+function pick(art){
+  if(focus&&focus.art===art){unfocus();return}
+  const g=art.parent,p=new THREE.Vector3();art.getWorldPosition(p);
+  const ry=g.rotation.y,nx=Math.sin(ry),nz=Math.cos(ry);
+  focus={art:art,p:p,nx:nx,nz:nz,dist:2.0,y0:Math.atan2(-nx,-nz),p0:0,
+    back:{pos:cam.position.clone(),yaw:yaw,pitch:pitch}};
+  flyTo(new THREE.Vector3(p.x+nx*2.0,p.y-.12,p.z+nz*2.0),focus.y0,0,1.1);
+  document.getElementById('info-t').textContent=art.userData.t;
+  document.getElementById('info-m').textContent=
+    art.userData.b+' · 入库 '+art.userData.dt+' · 滚轮贴近 / ESC 返回';
+  document.getElementById('info').classList.add('on');
+}
+function unfocus(){if(!focus)return;
+  const b=focus.back;focus=null;
+  document.getElementById('info').classList.remove('on');
+  flyTo(b.pos,b.yaw,b.pitch,.9)}
+document.getElementById('info-back').onclick=function(e){e.stopPropagation();unfocus()};
+document.getElementById('info-full').onclick=function(e){e.stopPropagation();
+  if(!focus)return;
+  const o=document.getElementById('ov');
+  document.getElementById('ovi').src=focus.art.userData.d||('wall/'+focus.art.userData.f+'.jpg');
+  document.getElementById('ovc').textContent=focus.art.userData.t;
+  o.classList.add('on')};
+document.getElementById('ov').onclick=function(){this.classList.remove('on')};
+// ---- 胶片颗粒 ----
+(function(){const c=document.createElement('canvas');c.width=c.height=120;
+  const g=c.getContext('2d');const id=g.createImageData(120,120);
+  for(let i=0;i<id.data.length;i+=4){const v=200+Math.random()*55|0;
+    id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=26}
+  g.putImageData(id,0,0);
+  document.getElementById('grain').style.backgroundImage='url('+c.toDataURL()+')'})();
+// ---- 主循环 ----
+const clk=new THREE.Clock();
+function loop(){requestAnimationFrame(loop);
+  const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
+  if(F){F.t+=dt;const k=Math.min(F.t/F.dur,1);
+    const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    cam.position.lerpVectors(F.fp,F.tp,e);
+    yaw=F.fy+(F.ty-F.fy)*e;pitch=F.fpi+(F.tpi-F.fpi)*e;
+    if(k>=1)F=null;
+  }else if(intro>0){intro-=dt;
+    const k=1-Math.max(intro,0)/3.4;
+    const e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    cam.position.set(0,2.45-.83*e,12.2-4.8*e);
+    pitch=-.14+.10*e;
+  }else if(!focus){
+    const v=.062;
+    if(keys.ArrowUp||keys.w||keys.W)step(v);
+    if(keys.ArrowDown||keys.s||keys.S)step(-v);
+    if(keys.ArrowLeft||keys.a||keys.A)yaw+=.022;
+    if(keys.ArrowRight||keys.d||keys.D)yaw-=.022;
+    if(performance.now()-lastAct>5000){
+      yaw+=Math.sin(t*.45)*.00022;
+      pitch=Math.max(-.55,Math.min(.55,pitch+Math.cos(t*.33)*.00006))}
+  }
+  cam.rotation.set(pitch,yaw-Math.PI,0,'YXZ');
+  dust.rotation.y=t*.008;dust.position.y=Math.sin(t*.06)*.12;
+  if(mouse&&intro<=0&&(++frame%3===0)){
+    mv.x=mouse[0]/innerWidth*2-1;mv.y=-(mouse[1]/innerHeight)*2+1;
+    ray.setFromCamera(mv,cam);
+    const h=ray.intersectObjects(hits)[0];
+    const nu=h?h.object:null;
+    if(nu!==hovered){hovered=nu;
+      ren.domElement.style.cursor=nu?'pointer':'default'}
+  }
+  units.forEach(function(u,i){
+    const on=hovered&&hovered.parent===u.g;
+    u.ts=on?1.035:1;u.si=on?2.1:1.55;
+    u.s+=(u.ts-u.s)*.12;u.g.scale.set(u.s,u.s,1);
+    u.spot.intensity=u.si*(1+.02*Math.sin(t*.7+i*1.7));
+    if(u.art.material.transparent){
+      u.art.material.opacity+=(1-u.art.material.opacity)*.07;
+      if(u.art.material.opacity>.99){u.art.material.transparent=false;
+        u.art.material.needsUpdate=true}}
+  });
+  ren.render(scene,cam)}
+loop();
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;
+  cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
+</script>
+</body></html>
