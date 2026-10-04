@@ -265,6 +265,55 @@ const path=new THREE.CatmullRomCurve3([
   new THREE.Vector3(7.5,0,-2),new THREE.Vector3(0,0,-4.6),new THREE.Vector3(-7.5,0,-2)],true);
 for(let i=0;i<2;i++){const g=person(COATS[4+i],'relax');scene.add(g);
   walkers.push({g:g,off:i*.5,sp:.0115+i*.004})}
+// ---- 安全通道: 应急门 + 发光安全出口牌 + 地面疏散光带 ----
+const EXITTEX=(function(){const c=document.createElement('canvas');
+  c.width=512;c.height=256;const g=c.getContext('2d');
+  g.fillStyle='#0b6b34';g.fillRect(0,0,512,256);
+  g.strokeStyle='#eafff0';g.lineWidth=10;g.strokeRect(8,8,496,240);
+  g.fillStyle='#eafff0';g.strokeStyle='#eafff0';
+  g.beginPath();g.arc(96,74,26,0,7);g.fill();
+  g.lineWidth=20;g.lineCap='round';
+  g.beginPath();g.moveTo(96,104);g.lineTo(88,168);g.stroke();
+  g.beginPath();g.moveTo(88,168);g.lineTo(56,214);g.stroke();
+  g.beginPath();g.moveTo(88,168);g.lineTo(124,210);g.stroke();
+  g.beginPath();g.moveTo(96,116);g.lineTo(140,146);g.stroke();
+  g.beginPath();g.moveTo(96,116);g.lineTo(52,150);g.stroke();
+  g.font='bold 92px "PingFang SC",sans-serif';g.textBaseline='middle';
+  g.fillText('安全出口',168,96);
+  g.font='bold 56px sans-serif';g.fillText('EXIT',172,186);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t})();
+const GLOWG=radTex([[0,'rgba(70,255,150,.75)'],[1,'rgba(70,255,150,0)']],128);
+const DASH=(function(){const c=document.createElement('canvas');c.width=32;c.height=256;
+  const g=c.getContext('2d');g.fillStyle='rgba(70,255,150,.9)';
+  for(let y=0;y<256;y+=64)g.fillRect(8,y,16,36);
+  const t=new THREE.CanvasTexture(c);t.wrapT=THREE.RepeatWrapping;return t})();
+function makeExit(x,z,ry){
+  const g=new THREE.Group();
+  const frame=new THREE.Mesh(new THREE.PlaneGeometry(1.24,2.3),
+    new THREE.MeshLambertMaterial({color:0x4a544c}));
+  frame.position.set(0,1.15,-.012);
+  const door=new THREE.Mesh(new THREE.PlaneGeometry(1.06,2.12),
+    new THREE.MeshLambertMaterial({color:0x23281f}));
+  door.position.y=1.06;
+  const push=new THREE.Mesh(new THREE.BoxGeometry(.52,.07,.03),
+    new THREE.MeshLambertMaterial({color:0x9aa39a}));
+  push.position.set(0,1.0,.03);
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.9),
+    new THREE.MeshBasicMaterial({map:GLOWG,transparent:true,opacity:.4,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  glow.position.set(0,2.44,.015);glow.renderOrder=5;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(.66,.33),
+    new THREE.MeshBasicMaterial({map:EXITTEX}));
+  sign.position.set(0,2.44,.03);
+  const dsh=DASH.clone();dsh.needsUpdate=true;dsh.repeat.set(1,4.2);
+  const strip=new THREE.Mesh(new THREE.PlaneGeometry(.16,5.6),
+    new THREE.MeshBasicMaterial({map:dsh,transparent:true,opacity:.42,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  strip.rotation.x=-Math.PI/2;strip.position.set(0,.028,3.1);strip.renderOrder=5;
+  g.add(frame);g.add(door);g.add(push);g.add(glow);g.add(sign);g.add(strip);
+  g.position.set(x,0,z);g.rotation.y=ry;scene.add(g)}
+makeExit(-12.83,6.1,Math.PI/2);
+makeExit(12.83,-6.1,-Math.PI/2);
 // ---- 控制（W/↑/滚轮上 = 前进；点击画作 = 飞近细看；ESC = 返回）----
 let yaw=Math.PI,pitch=-.04,keys={},lastAct=performance.now();
 let focus=null,F=null;
