@@ -200,30 +200,70 @@ const dust=new THREE.Points(dgeo,new THREE.PointsMaterial({size:.05,map:DOT,
   transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false}));
 dust.renderOrder=7;
 scene.add(dust);
-// ---- 观众（暗色剪影: 驻足者 + 漫步者）----
-function person(coat){const g=new THREE.Group();
+// ---- 观众（真人比例剪影: 驻足/指画/抱臂/亲子 + 漫步摆臂）----
+// 模型面向 +z；总高约 1.75*scale
+function person(coat,pose,scale){
+  scale=scale||1;
+  const g=new THREE.Group();
   const m=new THREE.MeshLambertMaterial({color:coat});
-  const legs=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.66,10),
-    new THREE.MeshLambertMaterial({color:0x14110d}));
-  legs.position.y=.33;
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(.155,.20,1.05,12),m);
-  body.position.y=1.16;
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.115,12,10),m);
-  head.position.y=1.80;
-  g.add(legs);g.add(body);g.add(head);
+  const dark=new THREE.MeshLambertMaterial({color:0x14110d});
+  // 双腿（分开站姿，一脚微前）
+  const legG=new THREE.Group();
+  const legL=new THREE.Mesh(new THREE.CylinderGeometry(.055,.05,.86,8),dark);
+  legL.position.set(-.085,.43,.02);
+  const legR=new THREE.Mesh(new THREE.CylinderGeometry(.055,.05,.86,8),dark);
+  legR.position.set(.085,.43,-.05);
+  legG.add(legL);legG.add(legR);g.add(legG);
+  // 躯干（前后压扁的胸腔+收腰）
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(.125,.155,.56,12),m);
+  torso.scale.z=.68;torso.position.y=1.12;g.add(torso);
+  // 肩线
+  const sh=new THREE.Mesh(new THREE.SphereGeometry(.14,12,10),m);
+  sh.scale.set(1.28,.42,.72);sh.position.y=1.375;g.add(sh);
+  // 手臂（肩为轴的组，便于姿势与摆臂）
+  function arm(side){const a=new THREE.Group();
+    const up=new THREE.Mesh(new THREE.CylinderGeometry(.042,.036,.5,8),m);
+    up.position.y=-.25;a.add(up);
+    a.position.set(side*.185,1.36,0);return a}
+  const armL=arm(-1),armR=arm(1);
+  armL.rotation.z=.14;armR.rotation.z=-.14;
+  if(pose==='point'){armR.rotation.x=-1.25;armR.rotation.z=-.1}
+  if(pose==='cross'){armL.rotation.set(-1.35,0,.55);armR.rotation.set(-1.35,0,-.55)}
+  if(pose==='hold'){armL.rotation.z=.62}
+  if(pose==='kid'){armR.rotation.z=-1.05}
+  g.add(armL);g.add(armR);
+  // 颈与头（微竖椭圆+发帽）
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.045,.05,.09,8),
+    new THREE.MeshLambertMaterial({color:0xc9a077}));
+  neck.position.y=1.46;g.add(neck);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.105,14,12),
+    new THREE.MeshLambertMaterial({color:0xc9a077}));
+  head.scale.set(1,1.14,1);head.position.y=1.60;g.add(head);
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.108,14,10,0,Math.PI*2,0,Math.PI*.55),dark);
+  hair.position.y=1.615;g.add(hair);
+  g.scale.setScalar(scale);
+  g.userData={arms:[armL,armR],head:head};
   return g}
 const COATS=[0x2b2620,0x39312a,0x262c33,0x31252b,0x2e2a24,0x24282e];
 const standers=[],walkers=[];
-[[-3.4,-6.5,0],[-10.5,-2.4,Math.PI/2],[10.6,3.2,-Math.PI/2],[5.2,-6.8,0]].forEach(function(v,i){
-  const g=person(COATS[i]);
+// [x, z, 面向墙的ry, 姿势]  面向: 后墙=π, 左墙=-π/2, 右墙=π/2
+[[-3.4,-6.4,Math.PI,'point'],[-10.5,-2.4,-Math.PI/2,'cross'],
+ [10.6,3.2,Math.PI/2,'relax'],[4.9,-6.4,Math.PI,'hold']].forEach(function(v,i){
+  const g=person(COATS[i],v[3]);
   g.position.set(v[0],0,v[1]);
-  g.rotation.y=v[2]+(i-1.5)*.09;
-  g.userData={ry:g.rotation.y,ph:i*1.7};
+  g.rotation.y=v[2]+(i-1.5)*.06;
+  g.rotation.x=.02;
+  g.userData.ry=g.rotation.y;g.userData.ph=i*1.7;
   scene.add(g);standers.push(g)});
+// 亲子: 小孩站在 hold 者身侧牵着手，抬手指画
+const kid=person(0x7a4a2a,'kid',.58);
+kid.position.set(4.35,0,-6.15);kid.rotation.y=Math.PI-.25;
+kid.userData.ry=kid.rotation.y;kid.userData.ph=7.3;
+scene.add(kid);standers.push(kid);
 const path=new THREE.CatmullRomCurve3([
   new THREE.Vector3(-6,0,3.5),new THREE.Vector3(0,0,5.6),new THREE.Vector3(6,0,3.5),
   new THREE.Vector3(7.5,0,-2),new THREE.Vector3(0,0,-4.6),new THREE.Vector3(-7.5,0,-2)],true);
-for(let i=0;i<2;i++){const g=person(COATS[4+i]);scene.add(g);
+for(let i=0;i<2;i++){const g=person(COATS[4+i],'relax');scene.add(g);
   walkers.push({g:g,off:i*.5,sp:.0115+i*.004})}
 // ---- 控制（W/↑/滚轮上 = 前进；点击画作 = 飞近细看；ESC = 返回）----
 let yaw=Math.PI,pitch=-.04,keys={},lastAct=performance.now();
@@ -321,11 +361,16 @@ function loop(){requestAnimationFrame(loop);
   }
   cam.rotation.set(pitch,yaw-Math.PI,0,'YXZ');
   dust.rotation.y=t*.008;dust.position.y=Math.sin(t*.06)*.12;
-  standers.forEach(function(g){g.rotation.y=g.userData.ry+Math.sin(t*.28+g.userData.ph)*.035});
+  standers.forEach(function(g){
+    g.rotation.y=g.userData.ry+Math.sin(t*.28+g.userData.ph)*.03;
+    if(g.userData.head)g.userData.head.rotation.y=Math.sin(t*.21+g.userData.ph*2)*.22});
   walkers.forEach(function(w){const u=(t*w.sp+w.off)%1;
     const pos=path.getPointAt(u),tan=path.getTangentAt(u);
     w.g.position.set(pos.x,Math.abs(Math.sin(t*2.2+w.off*17))*.022,pos.z);
-    w.g.rotation.y=Math.atan2(tan.x,tan.z)});
+    w.g.rotation.y=Math.atan2(tan.x,tan.z);
+    const sw=Math.sin(t*2.2+w.off*17)*.3;
+    const a=w.g.userData.arms;
+    if(a){a[0].rotation.x=sw;a[1].rotation.x=-sw}});
   if(mouse&&intro<=0&&(++frame%3===0)){
     mv.x=mouse[0]/innerWidth*2-1;mv.y=-(mouse[1]/innerHeight)*2+1;
     ray.setFromCamera(mv,cam);
