@@ -312,8 +312,9 @@ function makeExit(x,z,ry){
   strip.rotation.x=-Math.PI/2;strip.position.set(0,.028,3.1);strip.renderOrder=5;
   g.add(frame);g.add(door);g.add(push);g.add(glow);g.add(sign);g.add(strip);
   g.position.set(x,0,z);g.rotation.y=ry;scene.add(g)}
-makeExit(-12.83,6.1,Math.PI/2);
-makeExit(12.83,-6.1,-Math.PI/2);
+// 出口设在入口侧空墙（前墙不挂画），符合"从哪进从哪出"的疏散逻辑
+makeExit(-6.5,8.83,Math.PI);
+makeExit(6.5,8.83,Math.PI);
 // ---- 控制（W/↑/滚轮上 = 前进；点击画作 = 飞近细看；ESC = 返回）----
 let yaw=Math.PI,pitch=-.04,keys={},lastAct=performance.now();
 let focus=null,F=null;
