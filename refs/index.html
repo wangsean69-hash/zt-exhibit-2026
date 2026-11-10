@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>梓桐车辆参考照片墙</title><style>
+:root{--bg:#f6f1e7;--card:#fffdf8;--ink:#2b2418;--sub:#8a7c62;--gold:#c9a86a;--accent:#4f6d7a;--line:#e4d9c4}
+@media (prefers-color-scheme:dark){:root{--bg:#171310;--card:#211b16;--ink:#ece5d8;--sub:#9a8f7a;--line:#3a3226}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,'PingFang SC','Noto Sans SC',sans-serif;padding:16px}
+header{text-align:center;margin:8px 0 16px}
+h1{font-size:24px;margin:0 0 6px;letter-spacing:.12em}
+.sub{font-size:12px;color:var(--sub);letter-spacing:.1em}
+.back{position:fixed;top:14px;left:14px;font-size:12px;color:var(--sub);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--card)}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;-webkit-overflow-scrolling:touch}
+.tab{flex:0 0 auto;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:9px 16px;font-size:15px;cursor:pointer;transition:.2s}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.hint{font-size:13px;color:var(--sub);margin:4px 2px 12px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:760px){.grid{grid-template-columns:repeat(4,1fr)}body{padding:24px;max-width:1180px;margin:0 auto}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--line)}
+.card .cap{font-size:11px;color:var(--sub);padding:8px 10px;line-height:1.4;word-break:break-word}
+.viewer{position:fixed;inset:0;background:rgba(10,8,6,.92);display:none;align-items:center;justify-content:center;flex-direction:column;padding:18px;z-index:9}
+.viewer.on{display:flex}
+.viewer img{max-width:100%;max-height:72vh;border-radius:10px}
+.viewer .big{color:#ece5d8;font-size:14px;margin-top:12px;text-align:center;max-width:640px;line-height:1.6}
+.viewer .big a{color:#d9c08a}
+.viewer .close{position:absolute;top:14px;right:18px;color:#ece5d8;font-size:26px;cursor:pointer;border:0;background:none}
+footer{margin:22px 4px 8px;font-size:11px;color:var(--sub);line-height:1.7}
+</style></head><body>
+<a class="back" href="index.html">← 画室</a>
+<header><h1>车辆参考照片墙</h1><div class="sub">真实工程车 · 给梓桐当模特 · 每月可加车</div></header>
+<div class="tabs" id="tabs"></div>
+<div class="hint" id="hint"></div>
+<div class="grid" id="grid"></div>
+<div class="viewer" id="viewer"><button class="close" id="close">✕</button><img id="vimg" alt=""><div class="big" id="vcap"></div></div>
+<footer>照片来自 Wikimedia Commons，仅供家庭学习使用，点击查看大图下方有出处链接。</footer>
+<script>
+const DATA = [{"id": "mixer", "zh": "混凝土搅拌车", "note": "数一数有几个轮轴？搅拌罐朝哪边斜？", "imgs": [{"src": "img/mixer-01.jpg", "caption": "AML SinoTruk Howo 336 concrete mixer (25658680191)", "page": "https://commons.wikimedia.org/wiki/File:AML_SinoTruk_Howo_336_concrete_mixer_(25658680191).jpg"}, {"src": "img/mixer-02.jpg", "caption": "Sinotruk HOWO 6x4 concrete mixer truck in Luoyang", "page": "https://commons.wikimedia.org/wiki/File:Sinotruk_HOWO_6x4_concrete_mixer_truck_in_Luoyang.jpg"}, {"src": "img/mixer-03.jpg", "caption": "88a081 Holloway Ready-Mix plant and Riverway Louisville Terminal on River Road (", "page": "https://commons.wikimedia.org/wiki/File:88a081_Holloway_Ready-Mix_plant_and_Riverway_Louisville_Terminal_on_River_Road_(9767236716).jpg"}, {"src": "img/mixer-04.jpg", "caption": "88a082 Holloway Ready-Mix plant and Riverway Louisville Terminal on River Road (", "page": "https://commons.wikimedia.org/wiki/File:88a082_Holloway_Ready-Mix_plant_and_Riverway_Louisville_Terminal_on_River_Road_(9767258394).jpg"}]}, {"id": "crane", "zh": "汽车吊", "note": "支腿什么时候放下？吊臂是怎么一节节的？", "imgs": [{"src": "img/crane-01.jpg", "caption": "20.03.2026 Осмотр заводов по производству АКБ 09", "page": "https://commons.wikimedia.org/wiki/File:20.03.2026_%D0%9E%D1%81%D0%BC%D0%BE%D1%82%D1%80_%D0%B7%D0%B0%D0%B2%D0%BE%D0%B4%D0%BE%D0%B2_%D0%BF%D0%BE_%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D1%81%D1%82%D0%B2%D1%83_%D0%90%D0%9A%D0%91_09.jpg"}, {"src": "img/crane-02.jpg", "caption": "2010 04 21 München Bauma 203358 (4566084063)", "page": "https://commons.wikimedia.org/wiki/File:2010_04_21_M%C3%BCnchen_Bauma_203358_(4566084063).jpg"}, {"src": "img/crane-03.jpg", "caption": "Commonwealth and Batasan Hills, Quezon City 27", "page": "https://commons.wikimedia.org/wiki/File:Commonwealth_and_Batasan_Hills,_Quezon_City_27.jpg"}, {"src": "img/crane-04.jpg", "caption": "Commonwealth and Batasan Hills, Quezon City 28", "page": "https://commons.wikimedia.org/wiki/File:Commonwealth_and_Batasan_Hills,_Quezon_City_28.jpg"}]}, {"id": "excavator", "zh": "挖掘机", "note": "大臂、小臂、斗——三段怎么连起来的？", "imgs": [{"src": "img/excavator-01.jpg", "caption": "Caterpillar 215 Hydraulic Excavator (16927811617)", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_215_Hydraulic_Excavator_(16927811617).jpg"}, {"src": "img/excavator-02.jpg", "caption": "Caterpillar 302.7D excavator on Barrow Street", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_302.7D_excavator_on_Barrow_Street.jpg"}, {"src": "img/excavator-03.jpg", "caption": "Caterpillar 318CL hydraulic excavator +Spielvogel1", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_318CL_hydraulic_excavator_%2BSpielvogel1.jpg"}, {"src": "img/excavator-04.jpg", "caption": "Caterpillar 318CL hydraulic excavator +Spielvogel2", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_318CL_hydraulic_excavator_%2BSpielvogel2.jpg"}]}, {"id": "loader", "zh": "轮式装载机", "note": "前面的大斗是怎么举起来的？轮胎有多大？", "imgs": [{"src": "img/loader-01.jpg", "caption": "CATERPILLAR 950 GC Wheel Loader 01", "page": "https://commons.wikimedia.org/wiki/File:CATERPILLAR_950_GC_Wheel_Loader_01.jpg"}, {"src": "img/loader-02.jpg", "caption": "CATERPILLAR 950 GC Wheel Loader 02", "page": "https://commons.wikimedia.org/wiki/File:CATERPILLAR_950_GC_Wheel_Loader_02.jpg"}, {"src": "img/loader-04.jpg", "caption": "CATERPILLAR 950 GC Wheel Loader 04", "page": "https://commons.wikimedia.org/wiki/File:CATERPILLAR_950_GC_Wheel_Loader_04.jpg"}]}, {"id": "dozer", "zh": "推土机", "note": "履带和轮子有什么不一样？铲刀推土时朝哪边？", "imgs": [{"src": "img/dozer-01.jpg", "caption": "Caterpillar D6, nydyrking", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_D6,_nydyrking.jpg"}, {"src": "img/dozer-02.jpg", "caption": "Caterpillar D6K2 XL bulldozer on a job site", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_D6K2_XL_bulldozer_on_a_job_site.jpg"}, {"src": "img/dozer-03.jpg", "caption": "Caterpillar D6T Mississippi River project-01", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_D6T_Mississippi_River_project-01.jpg"}, {"src": "img/dozer-04.jpg", "caption": "Caterpillar D6T Mississippi River project", "page": "https://commons.wikimedia.org/wiki/File:Caterpillar_D6T_Mississippi_River_project.JPG"}]}, {"id": "dump", "zh": "自卸卡车", "note": "车斗抬起来的时候，铰链在哪里？", "imgs": [{"src": "img/dump-01.jpg", "caption": "BZ13651 (19.07.18, Motorvej 501, Viby J)DSC 4821Flickr (51733254926)", "page": "https://commons.wikimedia.org/wiki/File:BZ13651_(19.07.18,_Motorvej_501,_Viby_J)DSC_4821Flickr_(51733254926).jpg"}, {"src": "img/dump-02.jpg", "caption": "Black Lives Matter at Norwich anti Trump protest outside City Hall (32328841962)", "page": "https://commons.wikimedia.org/wiki/File:Black_Lives_Matter_at_Norwich_anti_Trump_protest_outside_City_Hall_(32328841962).jpg"}, {"src": "img/dump-03.jpg", "caption": "Flistipping", "page": "https://commons.wikimedia.org/wiki/File:Flistipping.jpg"}, {"src": "img/dump-04.jpg", "caption": "Grain spec tipper trailer unloading rock", "page": "https://commons.wikimedia.org/wiki/File:Grain_spec_tipper_trailer_unloading_rock.jpg"}]}, {"id": "pump", "zh": "混凝土泵车", "note": "长长的臂架是怎么折起来的？几节？", "imgs": [{"src": "img/pump-01.jpg", "caption": "Betonpomp (concrete pump)", "page": "https://commons.wikimedia.org/wiki/File:Betonpomp_(concrete_pump).jpg"}, {"src": "img/pump-02.jpg", "caption": "Concrete Pump Truck In Auckland CBD", "page": "https://commons.wikimedia.org/wiki/File:Concrete_Pump_Truck_In_Auckland_CBD.jpg"}, {"src": "img/pump-03.jpg", "caption": "Concrete Pumping Service Mercedes-Benz concrete pump truck, 9 January 2009", "page": "https://commons.wikimedia.org/wiki/File:Concrete_Pumping_Service_Mercedes-Benz_concrete_pump_truck,_9_January_2009.jpg"}, {"src": "img/pump-04.jpg", "caption": "Concrete mixer truck in Jyväskylä", "page": "https://commons.wikimedia.org/wiki/File:Concrete_mixer_truck_in_Jyv%C3%A4skyl%C3%A4.jpg"}]}];
+let cur = DATA[0];
+const tabs=document.getElementById('tabs'),grid=document.getElementById('grid'),hint=document.getElementById('hint');
+function render(){
+ tabs.innerHTML='';DATA.forEach(c=>{const b=document.createElement('button');b.className='tab'+(c===cur?' on':'');b.textContent=c.zh;
+  b.onclick=()=>{cur=c;render()};tabs.appendChild(b)});
+ hint.textContent='画的时候看一看：'+cur.note;
+ grid.innerHTML='';cur.imgs.forEach(im=>{const d=document.createElement('div');d.className='card';
+  d.innerHTML='<img loading="lazy" src="'+im.src+'" alt=""><div class="cap">'+im.caption+'</div>';
+  d.onclick=()=>open(im);grid.appendChild(d)});
+}
+const v=document.getElementById('viewer');
+function open(im){document.getElementById('vimg').src=im.src;
+ document.getElementById('vcap').innerHTML=im.caption+'　<a href="'+im.page+'" target="_blank">出处</a>';
+ v.classList.add('on')}
+document.getElementById('close').onclick=()=>v.classList.remove('on');
+v.onclick=e=>{if(e.target===v)v.classList.remove('on')};
+addEventListener('keydown',e=>{if(e.key==='Escape')v.classList.remove('on')});
+render();
+</script></body></html>
