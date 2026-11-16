@@ -69,9 +69,9 @@ box.appendChild(ren.domElement);
 const MAXA=ren.capabilities.getMaxAnisotropy();
 scene.add(new THREE.AmbientLight(0xfff2dd,.15));
 scene.add(new THREE.HemisphereLight(0x2c251d,0x0b0908,.30));
-const room=new THREE.Mesh(new THREE.BoxGeometry(26,6.4,18),
+const room=new THREE.Mesh(new THREE.BoxGeometry(26,7.6,18),
   new THREE.MeshLambertMaterial({color:0x251c15,side:THREE.BackSide}));
-room.position.y=3.2;scene.add(room);
+room.position.y=3.8;scene.add(room);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,18),
   new THREE.MeshPhongMaterial({color:0x180f08,specular:0x4a3820,shininess:36}));
 floor.rotation.x=-Math.PI/2;
@@ -79,7 +79,7 @@ floor.position.y=.02;   // 与房间外壳底面(y=0)错开, 杜绝共面 z-figh
 scene.add(floor);
 const ceil=new THREE.Mesh(new THREE.PlaneGeometry(26,18),
   new THREE.MeshLambertMaterial({color:0x0a0807}));
-ceil.rotation.x=Math.PI/2;ceil.position.y=6.38;  // 同理与外壳顶面(y=6.4)错开
+ceil.rotation.x=Math.PI/2;ceil.position.y=7.58;  // 厅高 6.4→7.6: 二楼全尺寸画位需要(与外壳顶面 y=7.6 错开)
 scene.add(ceil);
 const skM=new THREE.MeshLambertMaterial({color:0x54411f});
 [[0,-8.94,26,.1],[0,8.94,26,.1]].forEach(a=>{
@@ -119,8 +119,9 @@ function hang(w,i,n,wall,row){
   loader.load(w.d||('wall/'+w.f+'.jpg'),function(tx){
     tx.encoding=THREE.sRGBEncoding;tx.anisotropy=MAXA;
     const asp=tx.image.width/tx.image.height;
-    // 双层挂法: 二层画幅略收(博物馆上排宜小), 与一排画顶保持 ≥0.12m 净距
-    const h=row?(asp>1.6?1.2:(asp<.8?1.35:1.28)):(asp>1.6?1.45:(asp<.8?2.1:1.75)), wd=Math.min(h*asp,4.0);
+    // 双层挂法 v7: 上下两层同尺寸(CEO 11-16 定); 厅高 7.6, 二楼中心 y=5.3,
+    // 竖幅全高 2.1 时上排底沿 4.07 距下排顶沿 3.58 仍有 0.49m 净距
+    const h=asp>1.6?1.45:(asp<.8?2.1:1.75), wd=Math.min(h*asp,4.0);
     const g=new THREE.Group();
     const frame=new THREE.Mesh(new THREE.PlaneGeometry(wd+.36,h+.36),
       new THREE.MeshLambertMaterial({color:0x0b0907}));
@@ -150,23 +151,24 @@ function hang(w,i,n,wall,row){
     const sp=Math.min(4.4,usable/Math.max(n-1,1));
     const off=(i-(n-1)/2)*sp;
     let px,pz,ry=0;
-    if(wall==='back'){px=off;pz=-8.82}
-    else if(wall==='left'){px=-12.82;pz=off;ry=Math.PI/2}
-    else if(wall==='right'){px=12.82;pz=off;ry=-Math.PI/2}
+    // 墙角避让(CEO 11-16 定): 画框边缘距墙交线 ≥0.8m, 端位画自动内收, 拐角留白
+    if(wall==='back'){px=Math.max(-(12.0-wd/2),Math.min(12.0-wd/2,off));pz=-8.82}
+    else if(wall==='left'){px=-12.82;pz=Math.max(-(8.0-wd/2),Math.min(8.0-wd/2,off));ry=Math.PI/2}
+    else if(wall==='right'){px=12.82;pz=Math.max(-(8.0-wd/2),Math.min(8.0-wd/2,off));ry=-Math.PI/2}
     else{px=FX[i];pz=8.78;ry=Math.PI}
-    g.position.set(px,row?4.4:2.35,pz);g.rotation.y=ry;
+    g.position.set(px,row?5.3:2.35,pz);g.rotation.y=ry;
     const nx=Math.sin(ry),nz=Math.cos(ry);
     const lx=px+nx*1.5,lz=pz+nz*1.5;
     const lamp=new THREE.Mesh(new THREE.CylinderGeometry(.06,.09,.15,12),
       new THREE.MeshBasicMaterial({color:0xffe9c4}));
-    lamp.position.set(lx,5.92,lz);scene.add(lamp);
+    lamp.position.set(lx,row?7.15:3.85,lz);scene.add(lamp);
     const spot=new THREE.SpotLight(0xffe2ae,1.55,13,Math.PI/6.2,.62,1.25);
-    spot.position.set(lx,5.92,lz);spot.target=g;scene.add(spot);scene.add(g);
+    spot.position.set(lx,row?7.15:3.85,lz);spot.target=g;scene.add(spot);scene.add(g);
     const cone=new THREE.Mesh(new THREE.CylinderGeometry(.08,wd*.60,3.4,18,1,true),
       new THREE.MeshBasicMaterial({map:CONE,transparent:true,opacity:.09,
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
     cone.renderOrder=6+ro*.001;
-    cone.position.set((lx+px)/2,row?5.1:4.2,(lz+pz)/2);
+    cone.position.set((lx+px)/2,row?6.3:3.1,(lz+pz)/2);
     if(wall==='back')cone.rotation.x=.40;
     else if(wall==='front')cone.rotation.x=-.40;
     else if(wall==='left')cone.rotation.z=-.40;
@@ -189,7 +191,7 @@ function hang(w,i,n,wall,row){
 // 布展分配 v6 · 双层画廊 (容量 42):
 // 一楼槽位: 后墙7(最早) + 左右墙各5 + 前墙安全出口层4(最新4幅; 槽位 x=±2.9/±9.8,
 //           全部避开应急门 x=±6.5 的门洞、上方与疏散光带)
-// 第 22 幅起自动上二楼: 后墙→前墙角位→左墙→右墙 轮排, 与一楼同列对齐; 二层画幅略收、铭牌置顶
+// 第 22 幅起自动上二楼: 后墙→前墙角位→左墙→右墙 轮排, 与一楼同列对齐; v7 起上下层同尺寸、拐角留白
 const FX=[-2.9,2.9,-9.8,9.8];
 const W=WORKS.length;
 const CAP={back:7,left:5,right:5,front:4};
