@@ -150,7 +150,8 @@ function hang(w,i,n,wall){
     let px,pz,ry=0;
     if(wall==='back'){px=off;pz=-8.82}
     else if(wall==='left'){px=-12.82;pz=off;ry=Math.PI/2}
-    else{px=12.82;pz=off;ry=-Math.PI/2}
+    else if(wall==='right'){px=12.82;pz=off;ry=-Math.PI/2}
+    else{px=FX[i];pz=8.78;ry=Math.PI}
     g.position.set(px,2.35,pz);g.rotation.y=ry;
     const nx=Math.sin(ry),nz=Math.cos(ry);
     const lx=px+nx*1.5,lz=pz+nz*1.5;
@@ -165,6 +166,7 @@ function hang(w,i,n,wall){
     cone.renderOrder=6+ro*.001;
     cone.position.set((lx+px)/2,4.2,(lz+pz)/2);
     if(wall==='back')cone.rotation.x=.40;
+    else if(wall==='front')cone.rotation.x=-.40;
     else if(wall==='left')cone.rotation.z=-.40;
     else cone.rotation.z=.40;
     scene.add(cone);
@@ -182,11 +184,18 @@ function hang(w,i,n,wall){
     }
   });
 }
-const nb=Math.min(WORKS.length,7);
-const nl=Math.min(6,Math.max(WORKS.length-nb,0));
-const nr=Math.max(WORKS.length-nb-nl,0);
+// 布展分配: 后墙7(最早) + 前墙安全出口层4槽(最新4幅, 避开应急门x=±6.5的1.24m门洞及上下区)
+// 前墙安全画位: 中央两块(x=±2.9, 距门洞≥0.9m) + 两端角部两块(x=±9.8, 距门洞≥0.68m)
+// 其余分左/右墙各半, 单墙≤5 → 间距≥3.1m 不再重叠
+const FX=[-2.9,2.9,-9.8,9.8];
+const W=WORKS.length;
+const nb=Math.min(7,W);
+const nf=Math.min(4,Math.max(W-nb,0));
+const rest=Math.max(W-nb-nf,0);
+const nl=Math.ceil(rest/2), nr=rest-nl;
 WORKS.forEach(function(w,i){
   if(i<nb)hang(w,i,nb,'back');
+  else if(i>=W-nf)hang(w,i-(W-nf),nf,'front');
   else if(i<nb+nl)hang(w,i-nb,nl,'left');
   else hang(w,i-nb-nl,nr,'right');
 });
